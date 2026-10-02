@@ -285,6 +285,112 @@ class TimetableParser:
             "occupied_details": dict(details_for_slot)
         }
 
+    def get_slot_end_time(self, slot_str):
+        """Returns standard 1-hour end time for a slot string."""
+        mins = self._slot_to_minutes(slot_str) + 60
+        return f"{mins // 60:02d}:{mins % 60:02d}"
+
+    def get_all_end_times(self):
+        """Returns ordered list of possible end times for all slots."""
+        ends = []
+        for s in self.all_slots:
+            e = self.get_slot_end_time(s)
+            if e not in ends:
+                ends.append(e)
+        return sorted(ends, key=self._slot_to_minutes)
+
+    def get_slots_in_range(self, start_slot, end_time):
+        """
+        Returns list of consecutive slots falling in [start_slot, end_time).
+        E.g. ('08:30', '11:30') -> ['08:30', '09:30', '10:30']
+        """
+        start_m = self._slot_to_minutes(start_slot)
+        end_m = self._slot_to_minutes(end_time)
+        if end_m <= start_m:
+            return [start_slot]
+
+        in_range = []
+        for s in self.all_slots:
+            sm = self._slot_to_minutes(s)
+            if start_m <= sm < end_m:
+                in_range.append(s)
+        return in_range if in_range else [start_slot]
+
+    def get_time_period_status(self, day, start_slot, end_time):
+        """
+        Allocates and evaluates consecutive free hall availability over a custom time period.
+        E.g. Monday 8:30 AM to 11:30 AM (3 consecutive hours).
+        """
+        slots = self.get_slots_in_range(start_slot, end_time)
+        start_m = self._slot_to_minutes(start_slot)
+        end_m = self._slot_to_minutes(end_time)
+        duration_hours = max(1.0, round((end_m - start_m) / 60.0, 1))
+
+        all_sorted = sorted(list(self.master_rooms))
+        fully_free = []
+        partially_occupied = []  # list of dicts with room, occupied_slots, free_slots, bookings
+        fully_occupied = []
+
+        all_occupied_in_range = set()
+
+        for room in all_sorted:
+            occ_slots = []
+            bookings = []
+            for s in slots:
+                if room in self.occupied_schedule.get(day, {}).get(s, set()):
+                    occ_slots.append(s)
+                    all_occupied_in_range.add(room)
+                    # details
+                    for d in self.occupied_details.get(day, {}).get(s, []):
+                        if d.get("room") == room:
+                            bookings.append({**d, "slot": s})
+
+            free_slots = [s for s in slots if s not in occ_slots]
+
+            if len(occ_slots) == 0:
+                fully_free.append(room)
+            elif len(occ_slots) == len(slots):
+                fully_occupied.append({
+                    "room": room,
+                    "occupied_slots": occ_slots,
+                    "free_slots": [],
+                    "bookings": bookings
+                })
+            else:
+                partially_occupied.append({
+                    "room": room,
+                    "occupied_slots": occ_slots,
+                    "free_slots": free_slots,
+                    "bookings": bookings
+                })
+
+        # Slot-by-slot summaries
+        slot_breakdown = {}
+        for s in slots:
+            slot_breakdown[s] = self.get_room_status(day, s)
+
+        total = len(all_sorted)
+        free_count = len(fully_free)
+        occ_any_count = len(all_occupied_in_range)
+        pct = round((occ_any_count / total * 100), 1) if total > 0 else 0.0
+
+        return {
+            "day": day,
+            "start_slot": start_slot,
+            "end_time": end_time,
+            "duration_hours": duration_hours,
+            "slots": slots,
+            "consecutive_hours_count": len(slots),
+            "total_rooms": total,
+            "master_rooms": all_sorted,
+            "fully_free_rooms": fully_free,
+            "partially_occupied_rooms": partially_occupied,
+            "fully_occupied_rooms": fully_occupied,
+            "all_occupied_rooms": sorted(list(all_occupied_in_range)),
+            "occupancy_pct": pct,
+            "slot_breakdown": slot_breakdown
+        }
+
 if __name__ == "__main__":
     parser = TimetableParser()
     print("Parsed successfully!")

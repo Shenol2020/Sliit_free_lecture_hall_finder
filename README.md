@@ -17,13 +17,17 @@ A real-time Python web application built using **Streamlit**, **BeautifulSoup4**
    - Uses Python's `datetime.now()` to determine the current day of the week and system time.
    - Automatically maps current time to the active timetable slot (e.g., `10:25 AM` maps to the current active slot).
    - Instant calculation on page load without requiring user input.
-4. **Interactive Dashboard**:
+4. **Time & Slot Controls (Multi-Hour Block Allocation)**:
+   - Override the standard daily schedule to find rooms with **continuous free hall time**.
+   - Select any day of the week and a time period (e.g. **8:30 AM to 11:30 AM** for 3 consecutive hours).
+   - Identifies halls that are **uninterruptedly free across all consecutive hours** in the selected window.
+   - Categorizes rooms into **Fully Free**, **Partially Free** (showing which slots have classes), and **Busy**.
+5. **Interactive Dashboard**:
    - **Live Clock Badge**: Real-time pulsing clock showing current system time and day.
    - **KPI Metrics**: Total Recognized Halls, Empty/Available Halls, Occupied Halls, and Hall Utilization %.
    - **Building / Wing Filters**: Filter free rooms by Block A, Block B, Block F, Block G, or Special Labs.
    - **Full Day Matrix**: Comprehensive overview table of room occupancy for every slot of the day.
    - **Room Schedule Finder**: Check the entire weekly timetable for any selected room.
-   - **Test & Preview Mode**: Optional toggle in the sidebar to simulate any day or time slot.
 
 ---
 
