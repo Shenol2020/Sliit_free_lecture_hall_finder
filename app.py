@@ -447,7 +447,7 @@ with tab_matrix:
             "Occupied Rooms": ", ".join(occ) if occ else "None (All Free)"
         })
     
-    st.dataframe(matrix_data, use_container_width=True, hide_index=True)
+    st.dataframe(matrix_data, width="stretch", hide_index=True)
 
 # TAB 4: Room Schedule Search
 with tab_room_search:
@@ -477,7 +477,7 @@ with tab_room_search:
                 "Status": status_str
             })
     
-    st.dataframe(room_week_data, use_container_width=True, hide_index=True)
+    st.dataframe(room_week_data, width="stretch", hide_index=True)
 
 # Footer
 st.markdown("---")
