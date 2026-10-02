@@ -1,0 +1,953 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+  <head>
+    <title>SLIIT</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    
+  
+<style>
+/* ScheduleMate Timetable — Clean Modern Style 2026 */
+* { box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f6fa;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0 0 40px 0;
+}
+
+/* ── Header ── */
+.sm-header {
+    background: #1e3a8a;
+    color: white;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.sm-header img { height: 44px; }
+.sm-header-text h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.3px; }
+.sm-header-text p  { margin: 3px 0 0; font-size: 12px; opacity: 0.75; }
+
+/* ── Table ── */
+table {
+    border-collapse: collapse;
+    margin: 0 auto 28px auto;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 96%;
+}
+
+/* Caption — table title */
+caption {
+    background: #1e3a8a;
+    color: white;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+caption .institution { font-size: 11px; opacity: 0.7; display: block; margin-bottom: 2px; }
+caption .name        { font-size: 15px; font-weight: 800; display: block; }
+
+/* Column headers (time slots / days) */
+th.xAxis {
+    background: #1e3a8a;
+    color: white;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid #2d4fa0;
+    white-space: nowrap;
+}
+
+/* Row headers (teacher / student / room names) */
+/* defined below with border-bottom override */
+
+/* Row separation — strong horizontal lines */
+tbody tr {
+    border-bottom: 1px solid #94a3b8;
+}
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Empty cells */
+td {
+    padding: 6px 8px;
+    font-size: 11px;
+    border-left: 1px solid #e8ecf2;
+    border-right: 1px solid #e8ecf2;
+    border-top: none;
+    border-bottom: 1px solid #94a3b8;
+    vertical-align: top;
+    min-width: 110px;
+    line-height: 1.5;
+    background: #ffffff;
+    color: #94a3b8;
+}
+th.yAxis {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 8px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-align: right;
+    border: 1px solid #e2e8f0;
+    border-bottom: 1px solid #94a3b8;
+    white-space: nowrap;
+    min-width: 130px;
+}
+tbody tr:nth-child(even) th.yAxis { background: #e9edf2; }
+tbody tr:nth-child(even) td { background: #f8fafc; }
+
+/* Occupied cells — card-style, visually rich */
+tbody tr td:not(:empty):not(.detailed) {
+    background: #f8faff !important;
+    padding: 5px 8px 6px 10px !important;
+    border: 1px solid #bfdbfe !important;
+    border-left: 3px solid #1e3a8a !important;
+    border-bottom: 1px solid #94a3b8 !important;
+    vertical-align: top !important;
+    color: #1e3a8a !important;
+    font-weight: 600;
+    font-size: 10.5px !important;
+    line-height: 1.6 !important;
+}
+
+/* <span> inside occupied cell = tag badge */
+tbody tr td:not(:empty):not(.detailed) span {
+    display: inline-block !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+    margin-top: 2px !important;
+    text-transform: uppercase !important;
+}
+
+/* Hover */
+tbody tr:hover td:not(:empty):not(.detailed) {
+    background: #eff6ff !important;
+    transition: background 0.12s;
+}
+tbody tr:hover th.yAxis {
+    background: #e2e8f0 !important;
+    transition: background 0.1s;
+}
+
+/* ── Navigation & links ── */
+.back a {
+    display: inline-block;
+    margin: 8px 0 20px 32px;
+    color: #1e3a8a;
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 5px 14px;
+    border: 1px solid #1e3a8a;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+.back a:hover { background: #1e3a8a; color: white; }
+ul { padding-left: 32px; }
+ul li a {
+    color: #1e3a8a;
+    font-size: 13.5px;
+    line-height: 2;
+    font-weight: 500;
+    text-decoration: none;
+}
+ul li a:hover { text-decoration: underline; color: #f59e0b; }
+p strong {
+    font-size: 14px;
+    color: #334155;
+    margin-left: 32px;
+    display: block;
+    margin-top: 18px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+}
+/* ── Nested subgroup tables (parallel activities in same slot) ── */
+table.detailed {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* Each subgroup column */
+table.detailed td.detailed {
+    padding: 4px 7px;
+    font-size: 10.5px;
+    border: none;
+    border-right: 1px solid #bfdbfe;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+    min-width: 0;
+    background: transparent;
+    line-height: 1.4;
+    color: #1e3a8a;
+    width: 50%;
+}
+table.detailed td.detailed:last-child {
+    border-right: none;
+}
+
+/* Row 1 — Subgroup name header */
+table.detailed tr:first-child td.detailed {
+    background: #1e3a8a;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 9.5px;
+    text-align: center;
+    padding: 3px 5px;
+    letter-spacing: 0.3px;
+    border-right: 1px solid #2d4fa0;
+}
+table.detailed tr:first-child td.detailed:last-child {
+    border-right: none;
+}
+
+/* Row 2 — Subject + Tag */
+table.detailed tr:nth-child(2) td.detailed {
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 10.5px;
+    padding: 4px 6px;
+    border-bottom: 1px solid #dbeafe;
+}
+
+/* Inline tag badge (Practical / Lecture etc) — injected by FetService */
+table.detailed td.detailed span {
+    display: inline-block !important;
+    margin-top: 3px !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+}
+
+/* Row 3 — Teacher */
+table.detailed tr:nth-child(3) td.detailed {
+    background: #fafafa;
+    color: #374151;
+    font-size: 10px;
+    font-style: normal;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 3px 6px;
+}
+table.detailed tr:nth-child(3) td.detailed::before {
+    content: '\1F464  ';
+    font-style: normal;
+    font-size: 9px;
+}
+
+/* Row 4 — Room */
+table.detailed tr:nth-child(4) td.detailed {
+    background: #f0fdf4;
+    color: #166534;
+    font-weight: 700;
+    font-size: 10px;
+    border-bottom: none;
+    padding: 3px 6px;
+}
+table.detailed tr:nth-child(4) td.detailed::before {
+    content: '\1F4CD  ';
+    font-size: 9px;
+}
+
+/* ── Single-activity standalone cells (td.detailed not inside table.detailed) ── */
+/* These are cells that FET renders directly with class=detailed */
+td.detailed {
+    background: #eff6ff !important;
+    color: #1e3a8a !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    padding: 5px 8px !important;
+    line-height: 1.5 !important;
+    border-color: #bfdbfe !important;
+}
+td.detailed span {
+    display: inline-block !important;
+    margin-top: 3px !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+    letter-spacing: 0.3px !important;
+}
+</style>
+  </head>
+  <body id="top">
+    <div class='sm-header'>
+      <div style='background:white;border-radius:10px;padding:6px 10px;display:flex;align-items:center;'>
+        <img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' alt='ScheduleMate' style='height:52px;object-fit:contain;' />
+      </div>
+      <div class='sm-header-text'>
+        
+        <h1>SLIIT Timetable Management System</h1>
+        <p>ScheduleMate Generated Timetable</p>
+      </div>
+    </div>
+    
+    
+    <p><strong>Table of contents</strong></p>
+    <ul>
+      <li>
+        Year Y2S1
+        <ul>
+          <li>
+            Group <a href="#table_2">Y2.S1.WD.COM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_5">Y2.S1.WD.CSE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_7">Y2.S1.WD.IT.01</a>
+          </li>
+          <li>
+            Group <a href="#table_10">Y2.S1.WD.IT.02</a>
+          </li>
+          <li>
+            Group <a href="#table_13">Y2.S1.WD.IT.03</a>
+          </li>
+          <li>
+            Group <a href="#table_16">Y2.S1.WD.IT.04</a>
+          </li>
+          <li>
+            Group <a href="#table_19">Y2.S1.WD.IT.05</a>
+          </li>
+          <li>
+            Group <a href="#table_22">Y2.S1.WD.IT.06</a>
+          </li>
+          <li>
+            Group <a href="#table_25">Y2.S1.WD.IT.07</a>
+          </li>
+          <li>
+            Group <a href="#table_28">Y2.S1.WD.IT.08</a>
+          </li>
+          <li>
+            Group <a href="#table_31">Y2.S1.WD.IT.09</a>
+          </li>
+          <li>
+            Group <a href="#table_34">Y2.S1.WD.IT.10</a>
+          </li>
+          <li>
+            Group <a href="#table_37">Y2.S1.WD.IT.11</a>
+          </li>
+          <li>
+            Group <a href="#table_40">Y2.S1.WD.IT.12</a>
+          </li>
+          <li>
+            Group <a href="#table_43">Y2.S1.WD.IT.13</a>
+          </li>
+          <li>
+            Group <a href="#table_46">Y2.S1.WD.IT.14</a>
+          </li>
+          <li>
+            Group <a href="#table_49">Y2.S1.WD.IT.15</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        Year Y3S1
+        <ul>
+          <li>
+            Group <a href="#table_52">Y3.S1.WD.AI.01</a>
+          </li>
+          <li>
+            Group <a href="#table_55">Y3.S1.WD.COM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_58">Y3.S1.WD.COM.02</a>
+          </li>
+          <li>
+            Group <a href="#table_60">Y3.S1.WD.CS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_63">Y3.S1.WD.CS.02</a>
+          </li>
+          <li>
+            Group <a href="#table_66">Y3.S1.WD.CSE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_68">Y3.S1.WD.CSNE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_71">Y3.S1.WD.DS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_74">Y3.S1.WD.IM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_76">Y3.S1.WD.ISE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_79">Y3.S1.WD.ISE.02</a>
+          </li>
+          <li>
+            Group <a href="#table_81">Y3.S1.WD.IT.01</a>
+          </li>
+          <li>
+            Group <a href="#table_84">Y3.S1.WD.IT.02</a>
+          </li>
+          <li>
+            Group <a href="#table_87">Y3.S1.WD.IT.03</a>
+          </li>
+          <li>
+            Group <a href="#table_90">Y3.S1.WD.IT.04</a>
+          </li>
+          <li>
+            Group <a href="#table_92">Y3.S1.WD.SE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_95">Y3.S1.WD.SE.02</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        Year Y3S2
+        <ul>
+          <li>
+            Group <a href="#table_98">Y3.S2.WD.CS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_101">Y3.S2.WD.CSNE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_103">Y3.S2.WD.DS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_106">Y3.S2.WD.IM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_108">Y3.S2.WD.ISE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_110">Y3.S2.WD.IT.01</a>
+          </li>
+          <li>
+            Group <a href="#table_113">Y3.S2.WD.IT.02</a>
+          </li>
+          <li>
+            Group <a href="#table_116">Y3.S2.WD.SE.01</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        Year Y4S1
+        <ul>
+          <li>
+            Group <a href="#table_120">Y4.S1.WD.CS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_122">Y4.S1.WD.CSNE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_124">Y4.S1.WD.DS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_126">Y4.S1.WD.IM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_128">Y4.S1.WD.ISE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_130">Y4.S1.WD.IT.01</a>
+          </li>
+          <li>
+            Group <a href="#table_132">Y4.S1.WD.SE.01</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        Year Y4S2
+        <ul>
+          <li>
+            Group <a href="#table_135">Y4.S2.WD.CS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_137">Y4.S2.WD.DS.01</a>
+          </li>
+          <li>
+            Group <a href="#table_139">Y4.S2.WD.IM.01</a>
+          </li>
+          <li>
+            Group <a href="#table_141">Y4.S2.WD.ISE.01</a>
+          </li>
+          <li>
+            Group <a href="#table_143">Y4.S2.WD.IT.01</a>
+          </li>
+          <li>
+            Group <a href="#table_145">Y4.S2.WD.SE.01</a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <p>&nbsp;</p>
+    <table id="table_2" border="1" class="odd_table">
+      <caption><span class="institution">SLIIT</span><br /><span class="name">Y2.S1.WD.COM.01</span></caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th class="xAxis">Monday</th>
+          <th class="xAxis">Tuesday</th>
+          <th class="xAxis">Wednesday</th>
+          <th class="xAxis">Thursday</th>
+          <th class="xAxis">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="yAxis">08:30</th>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Mr. Samadhi Chathuranga Rathnayake<br/>B502<br/></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Dinithi Dilshani</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Heshani Bopage, Ms. Ranga Samaraweera</td><td class="detailed">Ms. Dinithi Dilshani, Ms. Sayumi Hettiarachchi</td></tr><tr><td class="detailed">G1305 LINUX</td><td class="detailed">DClab</td></tr></table></td>
+          <td rowspan="2">(SE2022) Design and Analysis of Algorithms<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Prof. Samantha Rajapaksha<br/>F1307<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">09:30</th>
+          <!-- span -->
+          <td rowspan="3">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Thilini Jayalath<br/>A304<br/></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Dinithi Dilshani</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Heshani Bopage, Ms. Ranga Samaraweera</td><td class="detailed">Ms. Dinithi Dilshani, Ms. Sayumi Hettiarachchi</td></tr><tr><td class="detailed">G1305 LINUX</td><td class="detailed">DClab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">10:30</th>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Lokesha Weerasinghe<br/>A304<br/></td>
+          <!-- span -->
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Thilini Jayalath</td></tr><tr><td class="detailed">G1305 LINUX</td></tr></table></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td></tr><tr><td class="detailed">Ms. Heshani Bopage, Ms. Ranga Samaraweera</td></tr><tr><td class="detailed">G1305 LINUX</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">11:30</th>
+          <!-- span -->
+          <!-- span -->
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Thilini Jayalath</td></tr><tr><td class="detailed">G1305 LINUX</td></tr></table></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td></tr><tr><td class="detailed">Ms. Heshani Bopage, Ms. Ranga Samaraweera</td></tr><tr><td class="detailed">G1305 LINUX</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">12:30</th>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>(SE2022) Design and Analysis of Algorithms<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Prof. Samantha Rajapaksha, Ms. Heshani Bopage<br/>F1308<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">13:30</th>
+          <td>---</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Chanura Jayawardana, Ms. Isini Ayathma Rathnayake</td></tr><tr><td class="detailed">F305</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Hansika Peiris</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">14:30</th>
+          <td>---</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Chanura Jayawardana, Ms. Isini Ayathma Rathnayake</td></tr><tr><td class="detailed">F305</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Hansika Peiris</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">15:30</th>
+          <td>---</td>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Dr. Nimal Rathnayake, Ms. Hansika Mahaadikara<br/>A304<br/></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td><td class="detailed">(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Nivinya Abeysinghe</td><td class="detailed">Ms. Deshani Kumari, Mr. Chanura Jayawardana</td></tr><tr><td class="detailed">G1305 LINUX</td><td class="detailed">G1303</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Hansika Peiris</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">16:30</th>
+          <td>---</td>
+          <!-- span -->
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td><td class="detailed">Y2.S1.WD.COM.0102</td></tr><tr><td class="detailed">(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span></td><td class="detailed">(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Nivinya Abeysinghe</td><td class="detailed">Ms. Deshani Kumari, Mr. Chanura Jayawardana</td></tr><tr><td class="detailed">G1305 LINUX</td><td class="detailed">G1303</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.COM.0101</td></tr><tr><td class="detailed">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span></td></tr><tr><td class="detailed">Ms. Sayumi Hettiarachchi, Ms. Hansika Peiris</td></tr><tr><td class="detailed">DClab</td></tr></table></td>
+          <td>---</td>
+        </tr>
+        <tr class="foot"><td></td><td colspan="5">Timetable generated with ScheduleMate on 8/14/26 3:23 PM</td></tr>
+      </tbody>
+    </table>
+    <p class="back"><a href="#top">back to the top</a></p>
+    <table id="table_5" border="1" class="even_table">
+      <caption><span class="institution">SLIIT</span><br /><span class="name">Y2.S1.WD.CSE.01</span></caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th class="xAxis">Monday</th>
+          <th class="xAxis">Tuesday</th>
+          <th class="xAxis">Wednesday</th>
+          <th class="xAxis">Thursday</th>
+          <th class="xAxis">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="yAxis">08:30</th>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Mr. Samadhi Chathuranga Rathnayake<br/>B502<br/></td>
+          <td>---</td>
+          <td rowspan="2">(IE2014) Circuit Theory<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Emblab</span><br/>Ms. Deshani Kumari, Ms. Menaka Madhavee Bogollagama<br/>F1105 EMBEDDED<br/></td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">09:30</th>
+          <!-- span -->
+          <td rowspan="3">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Thilini Jayalath<br/>A304<br/></td>
+          <!-- span -->
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">10:30</th>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Lokesha Weerasinghe<br/>A304<br/></td>
+          <!-- span -->
+          <td rowspan="2">(IE2024) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span><br/>Mr. Chamika Senadheera, Mr. Chanura Jayawardana<br/>G1304<br/></td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">11:30</th>
+          <!-- span -->
+          <!-- span -->
+          <!-- span -->
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">12:30</th>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>-x-</td>
+          <td>-x-</td>
+        </tr>
+        <tr>
+          <th class="yAxis">13:30</th>
+          <td rowspan="2">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span><br/>Ms. Deshani Kumari, Ms. Isini Ayathma Rathnayake<br/>DClab<br/></td>
+          <td rowspan="2">(IE2014) Circuit Theory<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Mr. Dinith Primal, Ms. Menaka Madhavee Bogollagama<br/>G606<br/></td>
+          <td rowspan="2">(SE2012) Object Oriented Analysis and Design<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span><br/>Ms. Thilini Jayalath, Ms. Nivinya Abeysinghe<br/>G1305 LINUX<br/></td>
+          <td rowspan="2">(SE2032) Database Management Systems<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Linux Lab</span><br/>Ms. Heshani Bopage, Ms. Ranga Samaraweera<br/>G1305 LINUX<br/></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">14:30</th>
+          <!-- span -->
+          <!-- span -->
+          <!-- span -->
+          <!-- span -->
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">15:30</th>
+          <td rowspan="2">(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Dclab</span><br/>Ms. Isini Ayathma Rathnayake, Ms. Deshani Kumari<br/>DClab<br/></td>
+          <td rowspan="2">Y2.S1.WD.CSE.01, Y2.S1.WD.COM.01<br/>(IE2004) Computer Netowrks<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Dr. Nimal Rathnayake, Ms. Hansika Mahaadikara<br/>A304<br/></td>
+          <td>---</td>
+          <td rowspan="2">(IE2014) Circuit Theory<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical Emblab</span><br/>Ms. Menaka Madhavee Bogollagama, Ms. Deshani Kumari<br/>F1105 EMBEDDED<br/></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">16:30</th>
+          <!-- span -->
+          <!-- span -->
+          <td>---</td>
+          <!-- span -->
+          <td>---</td>
+        </tr>
+        <tr class="foot"><td></td><td colspan="5">Timetable generated with ScheduleMate on 8/14/26 3:23 PM</td></tr>
+      </tbody>
+    </table>
+    <p class="back"><a href="#top">back to the top</a></p>
+    <table id="table_7" border="1" class="odd_table">
+      <caption><span class="institution">SLIIT</span><br /><span class="name">Y2.S1.WD.IT.01</span></caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th class="xAxis">Monday</th>
+          <th class="xAxis">Tuesday</th>
+          <th class="xAxis">Wednesday</th>
+          <th class="xAxis">Thursday</th>
+          <th class="xAxis">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="yAxis">08:30</th>
+          <td rowspan="2">Y2.S1.WD.IT.01, Y2.S1.WD.IT.02, Y2.S1.WD.IT.03, Y2.S1.WD.IT.04, Y2.S1.WD.IT.05, Y2.S1.WD.IT.06, Y2.S1.WD.IT.07<br/>(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture Online</span><br/>Dr. Lakmini Abeywardhana<br/></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">G1303</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Hashitha Jayasundara, Mr. S.M.B. Harshanath</td></tr><tr><td class="detailed">F304 Lab</td></tr></table></td>
+          <td rowspan="2">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Workshop</span><br/>Ms. Malithi Nawarathne<br/>F405<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">09:30</th>
+          <!-- span -->
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">G1303</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Hashitha Jayasundara, Mr. S.M.B. Harshanath</td></tr><tr><td class="detailed">F304 Lab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">10:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Seshmi Senadheera, Ms. Kugathasan Vethurja</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td rowspan="2">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Prof. Anuradha Karunasena, Ms. Lokesha Weerasinghe<br/>F403<br/></td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">11:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Seshmi Senadheera, Ms. Kugathasan Vethurja</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <!-- span -->
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">12:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td>(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Prof. Anuradha Karunasena, Mr. S.M.B. Harshanath<br/>F403<br/></td>
+          <td>---</td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">13:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">B403</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Maleesha Shavindi, Ms. Maneesha Weragoda</td><td class="detailed">Ms. Minuli Samaraweera, Ms. Sugandhi Kalansooriya</td></tr><tr><td class="detailed">B401</td><td class="detailed">F305</td></tr></table></td>
+          <td rowspan="4">Y2.S1.WD.IT.01, Y2.S1.WD.IT.02<br/>(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture+Tutorial</span><br/>Ms. Malika Lakmali<br/>EA1<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">14:30</th>
+          <td>-x-</td>
+          <td rowspan="3">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture+Tutorial</span><br/>Ms. Uthpala Samarakoon<br/>F405<br/></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">B403</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Maleesha Shavindi, Ms. Maneesha Weragoda</td><td class="detailed">Ms. Minuli Samaraweera, Ms. Sugandhi Kalansooriya</td></tr><tr><td class="detailed">B401</td><td class="detailed">F305</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">15:30</th>
+          <td>-x-</td>
+          <!-- span -->
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Chalani Bhagya, Ms. Prabhashini Jayasinghe</td><td class="detailed">Ms. Minuli Samaraweera, Ms. Malki Kumarage</td></tr><tr><td class="detailed">B403</td><td class="detailed">F304 Lab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">16:30</th>
+          <td>-x-</td>
+          <!-- span -->
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0101</td><td class="detailed">Y2.S1.WD.IT.0102</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Chalani Bhagya, Ms. Prabhashini Jayasinghe</td><td class="detailed">Ms. Minuli Samaraweera, Ms. Malki Kumarage</td></tr><tr><td class="detailed">B403</td><td class="detailed">F304 Lab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr class="foot"><td></td><td colspan="5">Timetable generated with ScheduleMate on 8/14/26 3:23 PM</td></tr>
+      </tbody>
+    </table>
+    <p class="back"><a href="#top">back to the top</a></p>
+    <table id="table_10" border="1" class="even_table">
+      <caption><span class="institution">SLIIT</span><br /><span class="name">Y2.S1.WD.IT.02</span></caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th class="xAxis">Monday</th>
+          <th class="xAxis">Tuesday</th>
+          <th class="xAxis">Wednesday</th>
+          <th class="xAxis">Thursday</th>
+          <th class="xAxis">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="yAxis">08:30</th>
+          <td rowspan="2">Y2.S1.WD.IT.01, Y2.S1.WD.IT.02, Y2.S1.WD.IT.03, Y2.S1.WD.IT.04, Y2.S1.WD.IT.05, Y2.S1.WD.IT.06, Y2.S1.WD.IT.07<br/>(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture Online</span><br/>Dr. Lakmini Abeywardhana<br/></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Sugandhi Kalansooriya, Ms. Isuri Yapa</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Wimalki Dilshani, Mr. Yashmika Saparamadu</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <td rowspan="2">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Sanjeevi Chandrasiri<br/>F303<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">09:30</th>
+          <!-- span -->
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Sugandhi Kalansooriya, Ms. Isuri Yapa</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Wimalki Dilshani, Mr. Yashmika Saparamadu</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">10:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Mr. Amila Alexander</td></tr><tr><td class="detailed">G1302</td></tr></table></td>
+          <td rowspan="2">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Uthpala Samarakoon<br/>F407<br/></td>
+          <td>(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Ms. Dulya Perera, Prof. Samantha Rajapaksha<br/>F303<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">11:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Mr. Amila Alexander</td></tr><tr><td class="detailed">G1302</td></tr></table></td>
+          <!-- span -->
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">12:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td>---</td>
+          <td>(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Ms. Uthpala Samarakoon<br/>F407<br/></td>
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">13:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Devindi Perera, Ms. Chanudi Tharushika</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td rowspan="2">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Workshop</span><br/>Ms. Malithi Nawarathne<br/>F301<br/></td>
+          <td>---</td>
+          <td rowspan="4">Y2.S1.WD.IT.01, Y2.S1.WD.IT.02<br/>(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture+Tutorial</span><br/>Ms. Malika Lakmali<br/>EA1<br/></td>
+        </tr>
+        <tr>
+          <th class="yAxis">14:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Devindi Perera, Ms. Chanudi Tharushika</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <!-- span -->
+          <td>---</td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">15:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Vijini Tharushika, Ms. Umayangana Wijayasiri</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Tasikala Rathnayake, Ms. Maneesha Weragoda</td><td class="detailed">Ms. Devindi Perera, Ms. Umayangana Wijayasiri</td></tr><tr><td class="detailed">B402</td><td class="detailed">F1305 Lab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr>
+          <th class="yAxis">16:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Vijini Tharushika, Ms. Umayangana Wijayasiri</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Sachintha Weththasinghe, Ms. Anuththara Hettiarachchi</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0201</td><td class="detailed">Y2.S1.WD.IT.0202</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Tasikala Rathnayake, Ms. Maneesha Weragoda</td><td class="detailed">Ms. Devindi Perera, Ms. Umayangana Wijayasiri</td></tr><tr><td class="detailed">B402</td><td class="detailed">F1305 Lab</td></tr></table></td>
+          <!-- span -->
+        </tr>
+        <tr class="foot"><td></td><td colspan="5">Timetable generated with ScheduleMate on 8/14/26 3:23 PM</td></tr>
+      </tbody>
+    </table>
+    <p class="back"><a href="#top">back to the top</a></p>
+    <table id="table_13" border="1" class="odd_table">
+      <caption><span class="institution">SLIIT</span><br /><span class="name">Y2.S1.WD.IT.03</span></caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th class="xAxis">Monday</th>
+          <th class="xAxis">Tuesday</th>
+          <th class="xAxis">Wednesday</th>
+          <th class="xAxis">Thursday</th>
+          <th class="xAxis">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="yAxis">08:30</th>
+          <td rowspan="2">Y2.S1.WD.IT.01, Y2.S1.WD.IT.02, Y2.S1.WD.IT.03, Y2.S1.WD.IT.04, Y2.S1.WD.IT.05, Y2.S1.WD.IT.06, Y2.S1.WD.IT.07<br/>(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture Online</span><br/>Dr. Lakmini Abeywardhana<br/></td>
+          <td rowspan="2">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Sasini Hathurusinghe<br/>F302<br/></td>
+          <td rowspan="2">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture</span><br/>Ms. Tharushi Rubasinghe<br/>A506<br/></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Neshika Ridimahaliyadda</td></tr><tr><td class="detailed">A412</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">09:30</th>
+          <!-- span -->
+          <!-- span -->
+          <!-- span -->
+          <td rowspan="4">Y2.S1.WD.IT.03, Y2.S1.WD.IT.04<br/>(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Lecture+Tutorial</span><br/>Ms. Medhini Jayakody<br/>B501<br/></td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td></tr><tr><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Janidu Illesinghe, Ms. Neshika Ridimahaliyadda</td></tr><tr><td class="detailed">A412</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">10:30</th>
+          <td>-x-</td>
+          <td>(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Ms. Sasini Hathurusinghe, Prof. Dilshan de Silva<br/>F302<br/></td>
+          <td>(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Tutorial</span><br/>Ms. Dulya Perera, Ms. Tharushi Rubasinghe<br/>A506<br/></td>
+          <!-- span -->
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Chalana Janith, Ms. Kugathasan Vethurja</td></tr><tr><td class="detailed">F304 Lab</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">11:30</th>
+          <td>-x-</td>
+          <td rowspan="2">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Workshop</span><br/>Ms. Fathima Fanoon Raheem<br/>F406<br/></td>
+          <td>---</td>
+          <!-- span -->
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. Chalana Janith, Ms. Kugathasan Vethurja</td></tr><tr><td class="detailed">F304 Lab</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">12:30</th>
+          <td>-x-</td>
+          <!-- span -->
+          <td>---</td>
+          <!-- span -->
+          <td>---</td>
+        </tr>
+        <tr>
+          <th class="yAxis">13:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. S.M.B. Harshanath, Ms. Malki Kumarage</td><td class="detailed">Mr. Janidu Illesinghe, Ms. Neshika Ridimahaliyadda</td></tr><tr><td class="detailed">F304 Lab</td><td class="detailed">G1304</td></tr></table></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Cheshani Peiris, Ms. Jasmi Gunasekara</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">14:30</th>
+          <td>-x-</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2140) Database Design and Development<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(IT2011) Artficial Intelligence and Machine Learning<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Mr. S.M.B. Harshanath, Ms. Malki Kumarage</td><td class="detailed">Mr. Janidu Illesinghe, Ms. Neshika Ridimahaliyadda</td></tr><tr><td class="detailed">F304 Lab</td><td class="detailed">G1304</td></tr></table></td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Cheshani Peiris, Ms. Jasmi Gunasekara</td></tr><tr><td class="detailed">F1305 Lab</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">15:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Prashanthi Dissanayake, Mr. Vishwa Gurusinghe</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <td>---</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Maneesha Weragoda, Mr. Chalana Janith</td><td class="detailed">Ms. Devindi Perera, Ms. Prabhashini Jayasinghe</td></tr><tr><td class="detailed">B403</td><td class="detailed">F1301 + F1302 Lab</td></tr></table></td>
+        </tr>
+        <tr>
+          <th class="yAxis">16:30</th>
+          <td>-x-</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td></tr><tr><td class="detailed">(IT2120) Probability and Statistics<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Prashanthi Dissanayake, Mr. Vishwa Gurusinghe</td></tr><tr><td class="detailed">A405</td></tr></table></td>
+          <td>---</td>
+          <td>---</td>
+          <td><table class="detailed"><tr><td class="detailed">Y2.S1.WD.IT.0301</td><td class="detailed">Y2.S1.WD.IT.0302</td></tr><tr><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td><td class="detailed">(SE2030) Software Engineering<br/><span style='display:inline-block;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:0.4px;'>Practical</span></td></tr><tr><td class="detailed">Ms. Maneesha Weragoda, Mr. Chalana Janith</td><td class="detailed">Ms. Devindi Perera, Ms. Prabhashini Jayasinghe</td></tr><tr><td class="detailed">B403</td><td class="detailed">F1301 + F1302 Lab</td></tr></table></td>
+        </tr>
+        <tr class="foot"><td></td><td colspan="5">Timetable generated with ScheduleMate on 8/14/26 3:23 PM</td></tr>
+      </tbody>
+    </table>
+    <p class="back"><a href="#top">back to the top</a></p>
+  </body>
+</html>
