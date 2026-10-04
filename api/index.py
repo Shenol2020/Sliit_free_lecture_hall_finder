@@ -152,7 +152,7 @@ HTML_TEMPLATE = """
             font-size: 13px;
             font-weight: 600;
         }
-        select, input[type="text"] {
+        select, input[type="text"], input[type="date"] {
             background: #1e293b;
             color: #f8fafc;
             border: 1px solid #334155;
@@ -162,7 +162,7 @@ HTML_TEMPLATE = """
             font-size: 13px;
             outline: none;
         }
-        select:focus { border-color: #38bdf8; }
+        select:focus, input[type="date"]:focus { border-color: #38bdf8; }
         
         .preset-btn {
             background: rgba(56, 189, 248, 0.15);
@@ -346,7 +346,7 @@ HTML_TEMPLATE = """
         <div class="hero">
             <div>
                 <h1>🏛️ SLIIT University Lecture Hall Tracker</h1>
-                <p>Real-time room occupancy analysis & multi-hour consecutive hall allocation</p>
+                <p>Real-time room occupancy analysis, multi-hour allocation & single hall inspector</p>
             </div>
             <div>
                 <div class="clock-badge">
@@ -361,8 +361,8 @@ HTML_TEMPLATE = """
             <div class="controls-top">
                 <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
                     <div>
-                        <span style="color:#94a3b8; font-size:12px; display:block;">Active Day:</span>
-                        <strong style="color: #60a5fa; font-size: 15px;">{{ active_day }}</strong>
+                        <span style="color:#94a3b8; font-size:12px; display:block;">Target Day / Date:</span>
+                        <strong style="color: #60a5fa; font-size: 15px;">{{ header_day_display }}</strong>
                     </div>
                     <div>
                         <span style="color:#94a3b8; font-size:12px; display:block;">Target Period / Slot:</span>
@@ -370,14 +370,24 @@ HTML_TEMPLATE = """
                     </div>
                     <div class="status-pill">{{ slot_status_msg }}</div>
                 </div>
-                <div>
-                    <button class="preset-btn" onclick="applyPreset('Monday', '08:30', '11:30')">⚡ 8:30 - 11:30 AM (3 Hours Free)</button>
-                    <button class="preset-btn" onclick="applyPreset('Monday', '13:30', '16:30')">⚡ 1:30 - 4:30 PM (3 Hours Free)</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="preset-btn" style="color:#a78bfa; border-color:rgba(167,139,250,0.4);" onclick="inspectB402()">🏛️ Inspect Hall B402</button>
+                    <button class="preset-btn" onclick="applyPreset('Monday', '08:30', '11:30')">⚡ 8:30 - 11:30 AM (3-Hr Block)</button>
+                    <button class="preset-btn" onclick="applyPreset('Monday', '13:30', '16:30')">⚡ 1:30 - 4:30 PM (3-Hr Block)</button>
                     <button class="preset-btn" style="color: #34d399; border-color: rgba(52,211,153,0.4);" onclick="resetRealtime()">🕒 Real-Time</button>
                 </div>
             </div>
             
             <div class="controls-form">
+                <!-- Select Hall Option (As requested!) -->
+                <label style="font-size: 12px; color: #a78bfa; font-weight:700;">Hall:</label>
+                <select id="hall-select">
+                    <option value="">-- All Halls (General) --</option>
+                    {% for rm in master_rooms %}
+                    <option value="{{ rm }}" {% if is_hall_mode and rm == selected_hall %}selected{% endif %}>{{ rm }} ({{ get_bldg(rm) }})</option>
+                    {% endfor %}
+                </select>
+
                 <label style="font-size: 12px; color: #94a3b8;">Day:</label>
                 <select id="day-select">
                     {% for d in all_days %}
@@ -409,12 +419,34 @@ HTML_TEMPLATE = """
                     <option value="Special Labs">Special Labs</option>
                 </select>
                 
-                <button class="preset-btn" style="background:#3b82f6; color:#fff; border:none; padding:8px 16px;" onclick="applyControls()">Apply Schedule</button>
+                <button class="preset-btn" style="background:#3b82f6; color:#fff; border:none; padding:8px 16px;" onclick="applyControls()">Apply</button>
             </div>
         </div>
 
         <!-- KPI Cards -->
         <div class="grid-kpi">
+            {% if is_hall_mode %}
+            <div class="card-kpi">
+                <div class="kpi-title">Inspected Hall</div>
+                <div class="kpi-num" style="color: #93c5fd; font-size: 28px;">{{ selected_hall }}</div>
+                <div style="font-size: 11px; color: #64748b;">📍 {{ get_bldg(selected_hall) }}</div>
+            </div>
+            <div class="card-kpi" style="border-color: rgba(16, 185, 129, 0.4);">
+                <div class="kpi-title" style="color: #34d399;">Free Slots Today</div>
+                <div class="kpi-num" style="color: #34d399;">{{ hall_day_data.free_slots_count }}</div>
+                <div style="font-size: 11px; color: #10b981;">Vacant / Available Hours</div>
+            </div>
+            <div class="card-kpi" style="border-color: rgba(239, 68, 68, 0.3);">
+                <div class="kpi-title" style="color: #f87171;">Filled / Booked Slots</div>
+                <div class="kpi-num" style="color: #f87171;">{{ hall_day_data.filled_slots_count }}</div>
+                <div style="font-size: 11px; color: #ef4444;">Classes Scheduled</div>
+            </div>
+            <div class="card-kpi">
+                <div class="kpi-title">Hall Availability</div>
+                <div class="kpi-num" style="color: #c084fc;">{{ hall_day_data.availability_pct }}%</div>
+                <div style="font-size: 11px; color: #64748b;">Day Free Rate</div>
+            </div>
+            {% else %}
             <div class="card-kpi">
                 <div class="kpi-title">Master Rooms</div>
                 <div class="kpi-num" style="color: #93c5fd;">{{ total_rooms }}</div>
@@ -445,14 +477,25 @@ HTML_TEMPLATE = """
                 <div class="kpi-num" style="color: #c084fc;">{{ occupancy_pct }}%</div>
                 <div style="font-size: 11px; color: #64748b;">Halls Booked in Range</div>
             </div>
+            {% endif %}
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('tab-free')">
-                🟢 {% if is_period %}All {{ period_data.consecutive_hours_count }} Hours Free{% else %}Free Halls{% endif %} (<span id="tab-free-count">{{ free_rooms|length }}</span>)
+            {% if is_hall_mode %}
+            <button class="tab-btn active" onclick="switchTab('tab-hall-free')">
+                🟢 Free Slots ({{ hall_day_data.free_slots_count }})
             </button>
-            {% if is_period %}
+            <button class="tab-btn" onclick="switchTab('tab-hall-filled')">
+                🔴 Filled Slots ({{ hall_day_data.filled_slots_count }})
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-hall-timeline')">
+                ⏱️ Day Schedule Timeline ({{ hall_day_data.total_slots }} Slots)
+            </button>
+            {% elif is_period %}
+            <button class="tab-btn active" onclick="switchTab('tab-free')">
+                🟢 All {{ period_data.consecutive_hours_count }} Hours Free (<span id="tab-free-count">{{ free_rooms|length }}</span>)
+            </button>
             <button class="tab-btn" onclick="switchTab('tab-partial')">
                 🟡 Partially Free ({{ period_data.partially_occupied_rooms|length }})
             </button>
@@ -463,6 +506,9 @@ HTML_TEMPLATE = """
                 📊 Consecutive Slots Breakdown ({{ period_data.slots|length }})
             </button>
             {% else %}
+            <button class="tab-btn active" onclick="switchTab('tab-free')">
+                🟢 Free Halls (<span id="tab-free-count">{{ free_rooms|length }}</span>)
+            </button>
             <button class="tab-btn" onclick="switchTab('tab-occ')">
                 🔴 Occupied Halls ({{ occupied_rooms|length }})
             </button>
@@ -472,30 +518,128 @@ HTML_TEMPLATE = """
             {% endif %}
         </div>
 
-        <!-- Tab 1: Free Rooms -->
+        {% if is_hall_mode %}
+        <!-- HALL MODE TAB 1: FREE SLOTS -->
+        <div id="tab-hall-free" class="tab-content active">
+            <h4 style="margin-bottom: 8px; color: #34d399;">🟢 Free / Vacant Time Slots for {{ selected_hall }} on {{ active_day }}</h4>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 16px;">Slots where {{ selected_hall }} has no scheduled classes and is available for student study, discussions, or meetings.</p>
+            
+            {% if hall_day_data.free_slots %}
+            <div class="room-grid">
+                {% for f in hall_day_data.free_slots %}
+                <div class="room-card">
+                    <div class="room-header">
+                        <span class="room-name">🚪 {{ selected_hall }}</span>
+                        <span class="badge-free">VACANT</span>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-top: 8px;">
+                        ⏰ {{ f.time_range }}
+                    </div>
+                    <div class="room-building">📍 {{ get_bldg(selected_hall) }} • Ready for session</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="padding: 20px; background: rgba(239,68,68,0.1); border-radius: 12px; color: #f87171; text-align: center;">
+                ⚠️ Hall {{ selected_hall }} is fully occupied all day on {{ active_day }}.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- HALL MODE TAB 2: FILLED SLOTS -->
+        <div id="tab-hall-filled" class="tab-content">
+            <h4 style="margin-bottom: 8px; color: #f87171;">🔴 Scheduled Classes in Hall {{ selected_hall }} on {{ active_day }}</h4>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 16px;">Sessions and student groups currently occupying {{ selected_hall }}.</p>
+            
+            {% if hall_day_data.filled_slots %}
+                {% for fl in hall_day_data.filled_slots %}
+                <div class="occ-card">
+                    <div class="room-header">
+                        <span style="font-size: 18px; font-weight: 700; color: #fca5a5;">⏰ {{ fl.time_range }}</span>
+                        <span class="badge-occ">FILLED</span>
+                    </div>
+                    {% for b in fl.bookings %}
+                    <div class="booking-row">
+                        <div style="font-weight: 600; color: #f1f5f9;">📖 {{ b.subject }}</div>
+                        <div style="color: #94a3b8; font-size: 12px; margin-top: 2px;">
+                            👨‍🏫 Lecturer: {{ b.lecturer }} | 👥 Group: {{ b.group }}
+                        </div>
+                        <div style="color: #38bdf8; font-size: 11px; margin-top: 3px;">
+                            {% if b.is_span %}⏳ Continuing session from previous slot (Rowspan){% else %}⏱️ Starts in this slot{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div style="padding: 20px; background: rgba(16,185,129,0.1); border-radius: 12px; color: #34d399; text-align: center;">
+                🎉 Hall {{ selected_hall }} has no classes scheduled on {{ active_day }}. It is 100% free all day!
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- HALL MODE TAB 3: TIMELINE -->
+        <div id="tab-hall-timeline" class="tab-content">
+            <h4 style="margin-bottom: 14px;">⏱️ Complete Daily Schedule Timeline for {{ selected_hall }} on {{ active_day }}</h4>
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Time Interval</th>
+                        <th>Status</th>
+                        <th>Class / Activity</th>
+                        <th>Lecturer & Group</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in hall_day_data.timeline %}
+                    <tr>
+                        <td><strong>{{ t.time_range }}</strong></td>
+                        <td>
+                            {% if t.status == 'FREE' %}
+                            <span class="badge-free">🟢 FREE</span>
+                            {% else %}
+                            <span class="badge-occ">🔴 FILLED</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.bookings %}
+                            <strong style="color:#f1f5f9;">{{ t.bookings[0].subject }}</strong>
+                            {% else %}
+                            <span style="color:#64748b;">— None (Vacant) —</span>
+                            {% endif %}
+                        </td>
+                        <td style="color:#94a3b8;">
+                            {% if t.bookings %}
+                            {{ t.bookings[0].lecturer }} ({{ t.bookings[0].group }})
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% elif is_period %}
+        <!-- PERIOD MODE TABS -->
         <div id="tab-free" class="tab-content active">
             <div class="room-grid" id="free-rooms-container">
                 {% for room in free_rooms %}
                 <div class="room-card" data-building="{{ get_bldg(room) }}">
                     <div class="room-header">
                         <span class="room-name">🚪 {{ room }}</span>
-                        {% if is_period %}
                         <span class="badge-block">{{ period_data.consecutive_hours_count }} HRS FREE</span>
-                        {% else %}
-                        <span class="badge-free">VACANT</span>
-                        {% endif %}
                     </div>
                     <div class="room-building">📍 {{ get_bldg(room) }}</div>
                     <div style="margin-top: 10px; font-size: 11px; color: #64748b;">
-                        {% if is_period %}Continuous free block: {{ active_slot_display }}{% else %}Free for slot {{ active_slot_display }}{% endif %}
+                        Continuous free block: {{ active_slot_display }}
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        {% if is_period %}
-        <!-- Tab 2: Partially Occupied Rooms -->
         <div id="tab-partial" class="tab-content">
             <div id="partial-rooms-container">
                 {% if period_data.partially_occupied_rooms %}
@@ -523,9 +667,7 @@ HTML_TEMPLATE = """
                 {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        <!-- Tab: Occupied Rooms -->
         <div id="tab-occ" class="tab-content">
             <div id="occ-rooms-container">
                 {% if occupied_rooms %}
@@ -533,7 +675,7 @@ HTML_TEMPLATE = """
                     <div class="occ-card" data-building="{{ get_bldg(room) }}">
                         <div class="room-header">
                             <span style="font-size: 18px; font-weight: 700; color: #fca5a5;">🚪 {{ room }} ({{ get_bldg(room) }})</span>
-                            <span class="badge-occ">OCCUPIED</span>
+                            <span class="badge-occ">BUSY IN RANGE</span>
                         </div>
                         {% for b in occupied_details.get(room, []) %}
                         <div class="booking-row">
@@ -548,13 +690,12 @@ HTML_TEMPLATE = """
                     {% endfor %}
                 {% else %}
                     <div style="padding: 20px; background: rgba(16,185,129,0.1); border-radius: 12px; color: #34d399; text-align: center;">
-                        🎉 All lecture halls are currently free during this time period!
+                        🎉 All lecture halls are completely vacant during this time period!
                     </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Tab: Matrix / Breakdown -->
         <div id="tab-matrix" class="tab-content">
             <table class="matrix-table">
                 <thead>
@@ -580,8 +721,79 @@ HTML_TEMPLATE = """
             </table>
         </div>
 
+        {% else %}
+        <!-- STANDARD SINGLE SLOT TABS -->
+        <div id="tab-free" class="tab-content active">
+            <div class="room-grid" id="free-rooms-container">
+                {% for room in free_rooms %}
+                <div class="room-card" data-building="{{ get_bldg(room) }}">
+                    <div class="room-header">
+                        <span class="room-name">🚪 {{ room }}</span>
+                        <span class="badge-free">VACANT</span>
+                    </div>
+                    <div class="room-building">📍 {{ get_bldg(room) }}</div>
+                    <div style="margin-top: 10px; font-size: 11px; color: #64748b;">Free for slot {{ active_slot_display }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="tab-occ" class="tab-content">
+            <div id="occ-rooms-container">
+                {% if occupied_rooms %}
+                    {% for room in occupied_rooms %}
+                    <div class="occ-card" data-building="{{ get_bldg(room) }}">
+                        <div class="room-header">
+                            <span style="font-size: 18px; font-weight: 700; color: #fca5a5;">🚪 {{ room }} ({{ get_bldg(room) }})</span>
+                            <span class="badge-occ">OCCUPIED</span>
+                        </div>
+                        {% for b in occupied_details.get(room, []) %}
+                        <div class="booking-row">
+                            <div style="font-weight: 600; color: #f1f5f9;">📖 {{ b.subject }}</div>
+                            <div style="color: #94a3b8; font-size: 12px;">👨‍🏫 Lecturer: {{ b.lecturer }} | 👥 Group: {{ b.group }}</div>
+                            <div style="color: #38bdf8; font-size: 11px; margin-top: 3px;">
+                                {% if b.is_span %}⏳ Continuing from earlier slot (Rowspan){% else %}⏱️ Started this slot{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 20px; background: rgba(16,185,129,0.1); border-radius: 12px; color: #34d399; text-align: center;">
+                        🎉 All lecture halls are currently free during this slot!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="tab-matrix" class="tab-content">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Time Slot</th>
+                        <th>Free Count</th>
+                        <th>Occupied Count</th>
+                        <th>Utilization</th>
+                        <th>Occupied Rooms</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matrix_data %}
+                    <tr>
+                        <td><strong>{{ m.slot }}</strong></td>
+                        <td style="color: #34d399; font-weight: 700;">{{ m.free_count }}</td>
+                        <td style="color: #f87171; font-weight: 700;">{{ m.occ_count }}</td>
+                        <td>{{ m.pct }}%</td>
+                        <td style="color: #94a3b8;">{{ m.occ_rooms }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <footer>
-            SLIIT Timetable Real-Time Engine • Time & Slot Controls with 3-Hour Block Allocation • Ready for Vercel & Streamlit Cloud
+            SLIIT Timetable Real-Time Engine • Single Hall Inspector (B402) • Multi-Hour Free Blocks • Ready for Vercel & Streamlit Cloud
         </footer>
     </div>
 
@@ -600,18 +812,30 @@ HTML_TEMPLATE = """
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             event.target.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            const targetEl = document.getElementById(tabId);
+            if (targetEl) targetEl.classList.add('active');
         }
 
         function applyControls() {
+            const hall = document.getElementById('hall-select').value;
             const day = document.getElementById('day-select').value;
             const start = document.getElementById('start-select').value;
             const end = document.getElementById('end-select').value;
-            window.location.href = `/?day=${encodeURIComponent(day)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+            const bldg = document.getElementById('bldg-select').value;
+            
+            if (hall) {
+                window.location.href = `/?room=${encodeURIComponent(hall)}&day=${encodeURIComponent(day)}`;
+            } else {
+                window.location.href = `/?day=${encodeURIComponent(day)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&bldg=${encodeURIComponent(bldg)}`;
+            }
         }
 
         function applyPreset(day, start, end) {
             window.location.href = `/?day=${encodeURIComponent(day)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+        }
+
+        function inspectB402() {
+            window.location.href = `/?room=B402`;
         }
 
         function resetRealtime() {
@@ -631,7 +855,8 @@ HTML_TEMPLATE = """
                     c.style.display = 'none';
                 }
             });
-            document.getElementById('tab-free-count').innerText = visibleFree;
+            const freeCountEl = document.getElementById('tab-free-count');
+            if (freeCountEl) freeCountEl.innerText = visibleFree;
         });
     </script>
 </body>
@@ -645,17 +870,52 @@ def home():
     current_day = now_dt.strftime("%A")
     matched_slot, auto_msg = parser.match_time_to_slot(now_dt.time())
     all_ends = parser.get_all_end_times()
+    sorted_rooms = sorted(list(parser.master_rooms))
     
+    req_room = request.args.get("room")
+    req_date = request.args.get("date")
     req_day = request.args.get("day")
     req_start = request.args.get("start")
     req_end = request.args.get("end")
     req_slot = request.args.get("slot")
     
-    active_day = req_day if req_day in parser.all_days else (current_day if current_day in parser.all_days else parser.all_days[0])
-    
-    # Check if multi-hour period requested
-    if req_start and req_end:
+    # Check if a date was provided
+    if req_date:
+        try:
+            parsed_d = dt.strptime(req_date, "%Y-%m-%d")
+            derived_day = parsed_d.strftime("%A")
+            active_day = derived_day if derived_day in parser.all_days else parser.all_days[0]
+            header_day_display = f"{parsed_d.strftime('%B %d, %Y')} ({active_day})"
+        except Exception:
+            active_day = req_day if req_day in parser.all_days else (current_day if current_day in parser.all_days else parser.all_days[0])
+            header_day_display = active_day
+    else:
+        active_day = req_day if req_day in parser.all_days else (current_day if current_day in parser.all_days else parser.all_days[0])
+        header_day_display = active_day
+        
+    # Check if single hall inspector requested
+    if req_room and req_room in parser.master_rooms:
+        is_hall_mode = True
+        is_period = False
+        selected_hall = req_room
+        hall_day_data = parser.get_hall_day_schedule(selected_hall, active_day)
+        active_start = parser.all_slots[0]
+        active_end = all_ends[0]
+        active_slot_display = f"Hall {selected_hall} ({active_day})"
+        slot_status_msg = f"{selected_hall}: {hall_day_data['free_slots_count']} Free Slots • {hall_day_data['filled_slots_count']} Filled Slots"
+        
+        free_rooms = []
+        occupied_rooms = []
+        occupied_details = {}
+        occupancy_pct = 100.0 - hall_day_data["availability_pct"]
+        period_data = None
+        matrix_data = []
+        
+    elif req_start and req_end:
+        is_hall_mode = False
         is_period = True
+        selected_hall = ""
+        hall_day_data = None
         active_start = req_start
         active_end = req_end
         period_data = parser.get_time_period_status(active_day, active_start, active_end)
@@ -666,7 +926,6 @@ def home():
         occupied_rooms = period_data["all_occupied_rooms"]
         occupancy_pct = period_data["occupancy_pct"]
         
-        # Details across slots in period
         occupied_details = {}
         for s in period_data["slots"]:
             s_det = parser.occupied_details.get(active_day, {}).get(s, [])
@@ -677,7 +936,6 @@ def home():
                         occupied_details[r] = []
                     occupied_details[r].append({**item, "slot": s})
                     
-        # Matrix data for the slots in the period
         matrix_data = []
         for s in period_data["slots"]:
             s_data = period_data["slot_breakdown"][s]
@@ -689,7 +947,10 @@ def home():
                 "occ_rooms": ", ".join(s_data["occupied_rooms"]) if s_data["occupied_rooms"] else "None (All Free)"
             })
     else:
+        is_hall_mode = False
         is_period = False
+        selected_hall = ""
+        hall_day_data = None
         active_start = req_slot if req_slot in parser.all_slots else matched_slot
         active_end = parser.get_slot_end_time(active_start)
         active_slot_display = active_start
@@ -717,6 +978,7 @@ def home():
         HTML_TEMPLATE,
         current_day=current_day,
         active_day=active_day,
+        header_day_display=header_day_display,
         active_start=active_start,
         active_end=active_end,
         active_slot_display=active_slot_display,
@@ -724,11 +986,15 @@ def home():
         all_days=parser.all_days,
         all_slots=parser.all_slots,
         all_ends=all_ends,
+        master_rooms=sorted_rooms,
         total_rooms=len(parser.master_rooms),
         free_rooms=free_rooms,
         occupied_rooms=occupied_rooms,
         occupied_details=occupied_details,
         occupancy_pct=occupancy_pct,
+        is_hall_mode=is_hall_mode,
+        selected_hall=selected_hall,
+        hall_day_data=hall_day_data,
         is_period=is_period,
         period_data=period_data,
         matrix_data=matrix_data,
@@ -742,11 +1008,27 @@ def api_status():
     current_day = now_dt.strftime("%A")
     matched_slot, msg = parser.match_time_to_slot(now_dt.time())
     
+    room = request.args.get("room")
     day = request.args.get("day", current_day if current_day in parser.all_days else parser.all_days[0])
     start = request.args.get("start")
     end = request.args.get("end")
     
-    if start and end:
+    if room and room in parser.master_rooms:
+        hall_data = parser.get_hall_day_schedule(room, day)
+        return jsonify({
+            "mode": "hall_schedule",
+            "room": room,
+            "building": get_room_category(room),
+            "day": day,
+            "total_slots": hall_data["total_slots"],
+            "free_slots_count": hall_data["free_slots_count"],
+            "filled_slots_count": hall_data["filled_slots_count"],
+            "availability_pct": hall_data["availability_pct"],
+            "free_slots": hall_data["free_slots"],
+            "filled_slots": hall_data["filled_slots"],
+            "timeline": hall_data["timeline"]
+        })
+    elif start and end:
         res = parser.get_time_period_status(day, start, end)
         return jsonify({
             "mode": "time_period",

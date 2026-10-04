@@ -22,7 +22,12 @@ A real-time Python web application built using **Streamlit**, **BeautifulSoup4**
    - Select any day of the week and a time period (e.g. **8:30 AM to 11:30 AM** for 3 consecutive hours).
    - Identifies halls that are **uninterruptedly free across all consecutive hours** in the selected window.
    - Categorizes rooms into **Fully Free**, **Partially Free** (showing which slots have classes), and **Busy**.
-5. **Interactive Dashboard**:
+5. **Single Hall Inspector (Select 1 Hall + Date)**:
+   - Manually pick any lecture hall (e.g. `B402`) and a specific date.
+   - Displays all **Free Slots** (uninterrupted vacant periods ready for use/study).
+   - Displays all **Filled Slots** (scheduled lectures/practicals, lecturers, and student groups).
+   - Provides an hourly schedule timeline matrix of the hall for the selected date.
+6. **Interactive Dashboard**:
    - **Live Clock Badge**: Real-time pulsing clock showing current system time and day.
    - **KPI Metrics**: Total Recognized Halls, Empty/Available Halls, Occupied Halls, and Hall Utilization %.
    - **Building / Wing Filters**: Filter free rooms by Block A, Block B, Block F, Block G, or Special Labs.

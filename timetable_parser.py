@@ -391,6 +391,72 @@ class TimetableParser:
             "slot_breakdown": slot_breakdown
         }
 
+    def get_hall_day_schedule(self, room, day):
+        """
+        Returns complete daily schedule for a specific room on a given day.
+        Identifies all free slots, filled slots, bookings, and timeline.
+        """
+        all_slots = self.all_slots
+        free_slots = []
+        filled_slots = []
+        timeline = []
+
+        for slot in all_slots:
+            end_time = self.get_slot_end_time(slot)
+            occ_set = self.occupied_schedule.get(day, {}).get(slot, set())
+            is_filled = room in occ_set
+
+            details = []
+            if is_filled:
+                for d in self.occupied_details.get(day, {}).get(slot, []):
+                    if d.get("room") == room:
+                        details.append(d)
+                filled_item = {
+                    "slot": slot,
+                    "end_time": end_time,
+                    "time_range": f"{slot} – {end_time}",
+                    "bookings": details
+                }
+                filled_slots.append(filled_item)
+                timeline.append({
+                    "slot": slot,
+                    "end_time": end_time,
+                    "time_range": f"{slot} – {end_time}",
+                    "status": "FILLED",
+                    "bookings": details
+                })
+            else:
+                free_item = {
+                    "slot": slot,
+                    "end_time": end_time,
+                    "time_range": f"{slot} – {end_time}"
+                }
+                free_slots.append(free_item)
+                timeline.append({
+                    "slot": slot,
+                    "end_time": end_time,
+                    "time_range": f"{slot} – {end_time}",
+                    "status": "FREE",
+                    "bookings": []
+                })
+
+        total = len(all_slots)
+        free_cnt = len(free_slots)
+        filled_cnt = len(filled_slots)
+        avail_pct = round((free_cnt / total * 100), 1) if total > 0 else 0.0
+
+        return {
+            "room": room,
+            "day": day,
+            "total_slots": total,
+            "free_slots_count": free_cnt,
+            "filled_slots_count": filled_cnt,
+            "availability_pct": avail_pct,
+            "free_slots": free_slots,
+            "filled_slots": filled_slots,
+            "timeline": timeline
+        }
+
 if __name__ == "__main__":
     parser = TimetableParser()
     print("Parsed successfully!")

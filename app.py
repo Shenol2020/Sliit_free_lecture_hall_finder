@@ -267,39 +267,74 @@ matched_slot, slot_status_msg = parser.match_time_to_slot(system_time_val)
 
 # Sidebar: Time and Slot Controls
 st.sidebar.markdown("## ⚙️ Time and Slot Controls")
-st.sidebar.caption("Override the standard daily schedule or allocate multi-hour blocks of free hall time.")
+st.sidebar.caption("Override the standard daily schedule, inspect a specific hall (e.g. B402) on any date, or allocate multi-hour free blocks.")
 
 # Control Mode Selection
 control_mode = st.sidebar.radio(
     "Schedule Control Mode:",
     [
         "🕒 Real-Time Clock (Live)",
+        "🏛️ Select 1 Hall + Date (e.g. B402)",
         "⏳ Custom Time Period (e.g. 8:30 - 11:30)",
         "🎯 Single Slot Explorer"
     ],
     index=0,
-    help="Select 'Custom Time Period' to allocate consecutive hours of free hall time (e.g. 8:30 AM to 11:30 AM)."
+    help="Select 'Select 1 Hall + Date' to manually pick a specific hall like B402 and a date to see all its free slots and filled classes."
 )
 
-# Building Filter in Sidebar
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🏢 Building / Wing Filter")
-categories = ["All Buildings", "Block A", "Block B", "Block F", "Block G", "Special Labs", "Engineering (Block E)"]
-selected_category = st.sidebar.selectbox("Filter Rooms by:", categories, index=0)
-
+is_hall_mode = (control_mode == "🏛️ Select 1 Hall + Date (e.g. B402)")
 is_period_mode = (control_mode == "⏳ Custom Time Period (e.g. 8:30 - 11:30)")
 is_single_slot = (control_mode == "🎯 Single Slot Explorer")
 
 all_end_times = parser.get_all_end_times()
+sorted_master_rooms = sorted(list(parser.master_rooms))
 
-if is_period_mode:
+# Mode-specific sidebar inputs
+if is_hall_mode:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🏛️ Select Hall & Date")
+    
+    # Default to B402 as requested in the user prompt!
+    default_hall_idx = sorted_master_rooms.index("B402") if "B402" in sorted_master_rooms else 0
+    selected_hall = st.sidebar.selectbox(
+        "Choose Lecture Hall / Room:",
+        sorted_master_rooms,
+        index=default_hall_idx,
+        help="Select any university lecture hall or lab (e.g. B402)."
+    )
+    
+    # Date Picker
+    selected_date = st.sidebar.date_input("Select Date:", value=now_dt.date())
+    date_day_name = selected_date.strftime("%A")
+    formatted_date_str = selected_date.strftime("%B %d, %Y")
+    
+    if date_day_name in parser.all_days:
+        active_day = date_day_name
+        is_weekend_date = False
+    else:
+        is_weekend_date = True
+        st.sidebar.warning(f"⚠️ {date_day_name} is a weekend (no scheduled lectures).")
+        active_day = st.sidebar.selectbox(
+            "Select timetable day to view for this date:",
+            parser.all_days,
+            index=0,
+            help="Choose a weekday timetable schedule to view."
+        )
+        
+    hall_day_data = parser.get_hall_day_schedule(selected_hall, active_day)
+    active_slot = f"Full Day ({formatted_date_str})"
+    slot_status_msg = f"Hall {selected_hall}: {hall_day_data['free_slots_count']} Free Slots • {hall_day_data['filled_slots_count']} Filled Slots"
+    period_status = None
+    is_weekend_or_off = False
+    selected_category = "All Buildings"
+
+elif is_period_mode:
     st.sidebar.markdown("---")
     st.sidebar.markdown("### ⏱️ Time Period Settings")
     
     default_day_idx = parser.all_days.index(current_day_name) if current_day_name in parser.all_days else 0
     active_day = st.sidebar.selectbox("Select Day of Week:", parser.all_days, index=default_day_idx, key="period_day")
     
-    # Preset period quick selection
     period_preset = st.sidebar.selectbox(
         "Quick Presets:",
         [
@@ -326,8 +361,7 @@ if is_period_mode:
         end_time = "13:30"
     else:
         start_slot = st.sidebar.selectbox("Start Time Slot:", parser.all_slots, index=0, key="custom_start")
-        # Filter end times after start slot
-        start_mins = parser._slot_to_minutes(start_slot)
+        start_m = parser._slot_to_minutes(start_slot)
         valid_ends = [e for e in all_end_times if parser._slot_to_minutes(e) > start_m]
         end_time = st.sidebar.selectbox("End Time:", valid_ends, index=min(2, len(valid_ends)-1), key="custom_end")
         
@@ -335,6 +369,12 @@ if is_period_mode:
     active_slot = f"{start_slot} – {end_time}"
     slot_status_msg = f"Allocated: {period_status['consecutive_hours_count']} Consecutive Hours ({len(period_status['slots'])} slots: {', '.join(period_status['slots'])})"
     is_weekend_or_off = False
+    
+    # Building Filter in Sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🏢 Building / Wing Filter")
+    categories = ["All Buildings", "Block A", "Block B", "Block F", "Block G", "Special Labs", "Engineering (Block E)"]
+    selected_category = st.sidebar.selectbox("Filter Rooms by:", categories, index=0)
 
 elif is_single_slot:
     st.sidebar.markdown("---")
@@ -347,12 +387,24 @@ elif is_single_slot:
     slot_status_msg = f"Manual Single Slot Explorer: {active_slot}"
     period_status = None
     
+    # Building Filter in Sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🏢 Building / Wing Filter")
+    categories = ["All Buildings", "Block A", "Block B", "Block F", "Block G", "Special Labs", "Engineering (Block E)"]
+    selected_category = st.sidebar.selectbox("Filter Rooms by:", categories, index=0)
+    
 else:
     # Real-Time Clock Mode (Zero input required on load)
     active_day = current_day_name if current_day_name in parser.all_days else parser.all_days[0]
     active_slot = matched_slot
     is_weekend_or_off = current_day_name not in parser.all_days
     period_status = None
+    
+    # Building Filter in Sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🏢 Building / Wing Filter")
+    categories = ["All Buildings", "Block A", "Block B", "Block F", "Block G", "Special Labs", "Engineering (Block E)"]
+    selected_category = st.sidebar.selectbox("Filter Rooms by:", categories, index=0)
 
 # Sidebar metadata
 st.sidebar.markdown("---")
@@ -362,13 +414,14 @@ st.sidebar.markdown(f"**Timetable Slots:** `{len(parser.all_slots)}`")
 st.sidebar.caption("ScheduleMate Timetable Engine © 2026")
 
 # Calculate room availability based on mode
-if is_period_mode:
+if is_hall_mode:
+    b_cat = get_room_category(selected_hall)
+elif is_period_mode:
     free_rooms = period_status["fully_free_rooms"]
     partially_occupied = period_status["partially_occupied_rooms"]
     fully_occupied = period_status["fully_occupied_rooms"]
     all_occupied_rooms = period_status["all_occupied_rooms"]
     
-    # Building filtering
     if selected_category != "All Buildings":
         filtered_free_rooms = [r for r in free_rooms if get_room_category(r) == selected_category]
         filtered_partial = [p for p in partially_occupied if get_room_category(p["room"]) == selected_category]
@@ -391,14 +444,23 @@ else:
         filtered_occupied_rooms = occupied_rooms
 
 # Main Hero Header
+if is_hall_mode:
+    header_target_str = f"{selected_date.strftime('%B %d, %Y')} ({active_day})"
+    header_title_detail = f"🏛️ Hall Inspector: {selected_hall} ({b_cat})"
+    header_slot_label = f"Daily Schedule ({active_day})"
+else:
+    header_target_str = active_day
+    header_title_detail = "🏛️ SLIIT University Lecture Hall Tracker"
+    header_slot_label = active_slot
+
 st.markdown(f"""
 <div class="hero-container">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
         <div>
             <div class="hero-title">
-                <span>🏛️</span> SLIIT University Lecture Hall Tracker
+                {header_title_detail}
             </div>
-            <p class="hero-subtitle">Real-time room occupancy analysis & multi-hour consecutive hall allocation</p>
+            <p class="hero-subtitle">Real-time room occupancy analysis, multi-hour allocation & single hall inspector</p>
         </div>
         <div>
             <div class="live-clock-badge">
@@ -409,12 +471,12 @@ st.markdown(f"""
     </div>
     <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
         <div>
-            <span style="color: #94a3b8; font-size: 13px;">📅 Target Day:</span> 
-            <strong style="color: #60a5fa; font-size: 15px; margin-left: 4px;">{active_day}</strong>
+            <span style="color: #94a3b8; font-size: 13px;">📅 Target Date / Day:</span> 
+            <strong style="color: #60a5fa; font-size: 15px; margin-left: 4px;">{header_target_str}</strong>
         </div>
         <div>
-            <span style="color: #94a3b8; font-size: 13px;">⏰ Selected Time / Slot:</span> 
-            <strong style="color: #38bdf8; font-size: 15px; margin-left: 4px;">{active_slot}</strong>
+            <span style="color: #94a3b8; font-size: 13px;">⏰ Target Time / Slot:</span> 
+            <strong style="color: #38bdf8; font-size: 15px; margin-left: 4px;">{header_slot_label}</strong>
         </div>
         <div>
             <span class="slot-pill">{slot_status_msg}</span>
@@ -424,70 +486,242 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 if is_weekend_or_off and control_mode == "🕒 Real-Time Clock (Live)":
-    st.info(f"💡 **Notice:** Today is **{current_day_name}**, which is outside the Monday–Friday timetable schedule. Showing preview for **{active_day}** at slot **{active_slot}**. Use the 'Time and Slot Controls' in the sidebar to allocate custom multi-hour periods.")
+    st.info(f"💡 **Notice:** Today is **{current_day_name}**, which is outside the Monday–Friday timetable schedule. Showing preview for **{active_day}** at slot **{active_slot}**. Use the sidebar to inspect specific halls (e.g. B402) on any date.")
 
 # KPI Metrics Bar
 col1, col2, col3, col4 = st.columns(4)
 
-with col1:
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-label">Master Rooms</div>
-        <div class="metric-value" style="color: #93c5fd;">{len(parser.master_rooms)}</div>
-        <div style="font-size: 11px; color: #64748b;">Total Recognized Halls</div>
-    </div>
-    """, unsafe_allow_html=True)
+if is_hall_mode:
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Selected Hall</div>
+            <div class="metric-value" style="color: #93c5fd; font-size: 26px;">{selected_hall}</div>
+            <div style="font-size: 11px; color: #64748b;">📍 {b_cat}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
+            <div class="metric-label" style="color: #34d399;">Free Slots Today</div>
+            <div class="metric-value" style="color: #34d399;">{hall_day_data['free_slots_count']}</div>
+            <div style="font-size: 11px; color: #10b981;">Vacant / Available Hours</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(239, 68, 68, 0.3);">
+            <div class="metric-label" style="color: #f87171;">Filled / Booked Slots</div>
+            <div class="metric-value" style="color: #f87171;">{hall_day_data['filled_slots_count']}</div>
+            <div style="font-size: 11px; color: #ef4444;">Classes Scheduled</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Hall Availability</div>
+            <div class="metric-value" style="color: #c084fc;">{hall_day_data['availability_pct']}%</div>
+            <div style="font-size: 11px; color: #64748b;">Day Free Rate</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-with col2:
-    if is_period_mode:
-        free_label = f"{period_status['consecutive_hours_count']}-Hr Free Halls"
-        sub_label = f"Uninterrupted for {period_status['duration_hours']} hours"
-    else:
-        free_label = "Available Empty Halls"
-        sub_label = f"Vacant for slot {active_slot}"
-    st.markdown(f"""
-    <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
-        <div class="metric-label" style="color: #34d399;">{free_label}</div>
-        <div class="metric-value" style="color: #34d399;">{len(free_rooms)}</div>
-        <div style="font-size: 11px; color: #10b981;">{sub_label}</div>
-    </div>
-    """, unsafe_allow_html=True)
+elif is_period_mode:
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Master Rooms</div>
+            <div class="metric-value" style="color: #93c5fd;">{len(parser.master_rooms)}</div>
+            <div style="font-size: 11px; color: #64748b;">Total Recognized Halls</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
+            <div class="metric-label" style="color: #34d399;">{period_status['consecutive_hours_count']}-Hr Free Halls</div>
+            <div class="metric-value" style="color: #34d399;">{len(free_rooms)}</div>
+            <div style="font-size: 11px; color: #10b981;">Uninterrupted for {period_status['duration_hours']} hours</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(245, 158, 11, 0.4);">
+            <div class="metric-label" style="color: #fbbf24;">Partially Occupied</div>
+            <div class="metric-value" style="color: #fbbf24;">{len(partially_occupied)}</div>
+            <div style="font-size: 11px; color: #94a3b8;">Free for part of the period</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Period Utilization</div>
+            <div class="metric-value" style="color: #c084fc;">{period_status['occupancy_pct']}%</div>
+            <div style="font-size: 11px; color: #64748b;">Halls Booked in Range</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-with col3:
-    if is_period_mode:
-        occ_label = "Partially Occupied"
-        occ_val = len(partially_occupied)
-        occ_sub = "Free for part of the period"
-        occ_color = "#fbbf24"
-        occ_border = "rgba(245, 158, 11, 0.4)"
-    else:
-        occ_label = "Occupied Halls"
-        occ_val = len(occupied_rooms)
-        occ_sub = "Classes in progress"
-        occ_color = "#f87171"
-        occ_border = "rgba(239, 68, 68, 0.3)"
-    st.markdown(f"""
-    <div class="metric-card" style="border-color: {occ_border};">
-        <div class="metric-label" style="color: {occ_color};">{occ_label}</div>
-        <div class="metric-value" style="color: {occ_color};">{occ_val}</div>
-        <div style="font-size: 11px; color: #94a3b8;">{occ_sub}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col4:
-    pct_val = period_status["occupancy_pct"] if is_period_mode else room_status["occupancy_pct"]
-    st.markdown(f"""
-    <div class="metric-card">
-        <div class="metric-label">Period Utilization</div>
-        <div class="metric-value" style="color: #c084fc;">{pct_val}%</div>
-        <div style="font-size: 11px; color: #64748b;">Halls Booked in Range</div>
-    </div>
-    """, unsafe_allow_html=True)
+else:
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Master Rooms</div>
+            <div class="metric-value" style="color: #93c5fd;">{len(parser.master_rooms)}</div>
+            <div style="font-size: 11px; color: #64748b;">Total Recognized Halls</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
+            <div class="metric-label" style="color: #34d399;">Available Empty Halls</div>
+            <div class="metric-value" style="color: #34d399;">{len(free_rooms)}</div>
+            <div style="font-size: 11px; color: #10b981;">Vacant for slot {active_slot}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color: rgba(239, 68, 68, 0.3);">
+            <div class="metric-label" style="color: #f87171;">Occupied Halls</div>
+            <div class="metric-value" style="color: #f87171;">{len(occupied_rooms)}</div>
+            <div style="font-size: 11px; color: #ef4444;">Classes in progress</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Slot Utilization</div>
+            <div class="metric-value" style="color: #c084fc;">{room_status['occupancy_pct']}%</div>
+            <div style="font-size: 11px; color: #64748b;">Slot Occupancy Rate</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
 # Main Content Rendering based on mode
-if is_period_mode:
+if is_hall_mode:
+    # 🏛️ SINGLE HALL INSPECTOR MODE TABS
+    tab_h_free, tab_h_filled, tab_h_timeline, tab_h_week = st.tabs([
+        f"🟢 All Free Slots ({hall_day_data['free_slots_count']})",
+        f"🔴 Filled Slots ({hall_day_data['filled_slots_count']})",
+        f"⏱️ Full Day Schedule Matrix ({hall_day_data['total_slots']} Slots)",
+        f"📅 Full Week for {selected_hall}"
+    ])
+    
+    with tab_h_free:
+        st.markdown(f"#### 🟢 Free / Vacant Time Slots for Hall `{selected_hall}` on {active_day}")
+        st.caption(f"Showing all time periods where `{selected_hall}` ({b_cat}) has no scheduled lectures on **{formatted_date_str}**.")
+        
+        if hall_day_data["free_slots"]:
+            # Check continuous blocks
+            consec_ranges = []
+            curr_start = None
+            prev_end = None
+            for f in hall_day_data["free_slots"]:
+                if curr_start is None:
+                    curr_start = f["slot"]
+                    prev_end = f["end_time"]
+                elif f["slot"] == prev_end:
+                    prev_end = f["end_time"]
+                else:
+                    consec_ranges.append(f"{curr_start} – {prev_end}")
+                    curr_start = f["slot"]
+                    prev_end = f["end_time"]
+            if curr_start and prev_end:
+                consec_ranges.append(f"{curr_start} – {prev_end}")
+                
+            if consec_ranges:
+                st.success(f"⚡ **Uninterrupted Free Time Blocks on {active_day}:** " + " &nbsp;|&nbsp; ".join([f"**{cr}**" for cr in consec_ranges]))
+            
+            # Grid of free slots
+            grid_cols = st.columns(3)
+            for idx, item in enumerate(hall_day_data["free_slots"]):
+                with grid_cols[idx % 3]:
+                    st.markdown(f"""
+                    <div class="room-card" style="min-height: 100px;">
+                        <div class="room-header">
+                            <span class="room-name">🚪 {selected_hall}</span>
+                            <span class="badge-free">VACANT</span>
+                        </div>
+                        <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-top: 8px;">
+                            ⏰ {item['time_range']}
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                            📍 {b_cat} • Available for sessions & study
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.warning(f"⚠️ Hall `{selected_hall}` has no free slots on this date (Fully booked all day).")
+            
+    with tab_h_filled:
+        st.markdown(f"#### 🔴 Scheduled Classes in Hall `{selected_hall}` on {active_day}")
+        st.caption(f"Details of all sessions occupying `{selected_hall}` on **{formatted_date_str}**.")
+        
+        if hall_day_data["filled_slots"]:
+            for item in hall_day_data["filled_slots"]:
+                with st.container():
+                    st.markdown(f"""
+                    <div class="room-card-occupied">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 18px; font-weight: 700; color: #fca5a5;">
+                                ⏰ {item['time_range']}
+                            </span>
+                            <span class="room-tag-occ">FILLED</span>
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Hall: {selected_hall} ({b_cat})</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    for b in item["bookings"]:
+                        span_txt = "⏳ Continuing session from previous slot (Rowspan)" if b.get("is_span") else "⏱️ Starts in this slot"
+                        st.markdown(f"""
+                        <div class="booking-row" style="margin-left: 12px; margin-bottom: 8px;">
+                            <div style="font-size: 14px; font-weight: 700; color: #f8fafc;">📖 {b.get('subject', 'Scheduled Activity')}</div>
+                            <div style="color: #94a3b8; font-size: 12px; margin-top: 2px;">
+                                👨‍🏫 Lecturer: <strong>{b.get('lecturer', 'Staff')}</strong> &nbsp;|&nbsp; 👥 Group: <strong>{b.get('group', 'Student Group')}</strong>
+                            </div>
+                            <div style="color: #38bdf8; font-size: 11px; margin-top: 3px;">{span_txt}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+        else:
+            st.success(f"🎉 Hall `{selected_hall}` has NO classes scheduled on {active_day}! The hall is completely free all day.")
+            
+    with tab_h_timeline:
+        st.markdown(f"#### ⏱️ Complete Day Schedule Timeline for `{selected_hall}` on {active_day}")
+        st.caption(f"Full hour-by-hour status overview from 08:30 to 17:30.")
+        
+        t_data = []
+        for row in hall_day_data["timeline"]:
+            status_badge = "🟢 FREE (Vacant)" if row["status"] == "FREE" else "🔴 FILLED (Class in progress)"
+            class_desc = ""
+            lecturer_desc = ""
+            if row["bookings"]:
+                b = row["bookings"][0]
+                class_desc = f"{b.get('subject', '')} ({b.get('group', '')})"
+                lecturer_desc = b.get('lecturer', '')
+            t_data.append({
+                "Time Slot": row["time_range"],
+                "Status": status_badge,
+                "Class / Activity": class_desc if class_desc else "— None (Hall Vacant) —",
+                "Lecturer": lecturer_desc if lecturer_desc else "—"
+            })
+        st.dataframe(t_data, width="stretch", hide_index=True)
+        
+    with tab_h_week:
+        st.markdown(f"#### 📅 Full Week Availability for `{selected_hall}` ({b_cat})")
+        st.caption("Weekly overview across all timetable days (Monday – Friday).")
+        
+        week_records = []
+        for d in parser.all_days:
+            d_sched = parser.get_hall_day_schedule(selected_hall, d)
+            for item in d_sched["timeline"]:
+                week_records.append({
+                    "Day": d,
+                    "Time Range": item["time_range"],
+                    "Status": "🟢 FREE" if item["status"] == "FREE" else "🔴 FILLED",
+                    "Details": f"{item['bookings'][0].get('subject', '')} ({item['bookings'][0].get('group', '')})" if item["bookings"] else "Vacant"
+                })
+        st.dataframe(week_records, width="stretch", hide_index=True)
+
+elif is_period_mode:
     # PERIOD MODE TABS
     tab_block_free, tab_block_partial, tab_block_occ, tab_block_matrix = st.tabs([
         f"🟢 Continuously Free for All {period_status['consecutive_hours_count']} Hours ({len(filtered_free_rooms)})",
@@ -503,7 +737,7 @@ if is_period_mode:
         if filtered_free_rooms:
             grid_cols = st.columns(4)
             for idx, room in enumerate(filtered_free_rooms):
-                b_cat = get_room_category(room)
+                b_cat_room = get_room_category(room)
                 with grid_cols[idx % 4]:
                     st.markdown(f"""
                     <div class="room-card">
@@ -511,7 +745,7 @@ if is_period_mode:
                             <div class="room-name">
                                 <span>🚪</span> {room}
                             </div>
-                            <div class="room-building">📍 {b_cat}</div>
+                            <div class="room-building">📍 {b_cat_room}</div>
                         </div>
                         <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <span class="room-tag-block">{period_status['consecutive_hours_count']} HRS FREE</span>
@@ -529,7 +763,7 @@ if is_period_mode:
         if filtered_partial:
             for p in filtered_partial:
                 room = p["room"]
-                b_cat = get_room_category(room)
+                b_cat_p = get_room_category(room)
                 free_slots_str = ", ".join(p["free_slots"])
                 occ_slots_str = ", ".join(p["occupied_slots"])
                 
@@ -538,7 +772,7 @@ if is_period_mode:
                     <div class="room-card-partial">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                             <div style="font-size: 18px; font-weight: 700; color: #fde68a;">
-                                🚪 {room} <span style="font-size: 12px; font-weight: normal; color: #94a3b8; margin-left: 8px;">({b_cat})</span>
+                                🚪 {room} <span style="font-size: 12px; font-weight: normal; color: #94a3b8; margin-left: 8px;">({b_cat_p})</span>
                             </div>
                             <span class="room-tag-partial">PARTIALLY FREE</span>
                         </div>
@@ -562,8 +796,7 @@ if is_period_mode:
         st.markdown(f"#### 🔴 Halls with Scheduled Classes during {active_day} ({start_slot} – {end_time})")
         if filtered_occupied_rooms:
             for room in filtered_occupied_rooms:
-                b_cat = get_room_category(room)
-                # Find all bookings for this room across the period
+                b_cat_occ = get_room_category(room)
                 all_b = []
                 for s in period_status["slots"]:
                     for d in period_status["slot_breakdown"][s]["occupied_details"].get(room, []):
@@ -574,7 +807,7 @@ if is_period_mode:
                     <div class="room-card-occupied">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="font-size: 18px; font-weight: 700; color: #fca5a5;">
-                                🚪 {room} <span style="font-size: 12px; color: #94a3b8; font-weight: normal;">({b_cat})</span>
+                                🚪 {room} <span style="font-size: 12px; color: #94a3b8; font-weight: normal;">({b_cat_occ})</span>
                             </div>
                             <span class="room-tag-occ">BUSY IN RANGE</span>
                         </div>
@@ -607,11 +840,11 @@ if is_period_mode:
 
 else:
     # STANDARD SINGLE SLOT / REAL-TIME TABS
-    tab_available, tab_occupied, tab_matrix, tab_room_search = st.tabs([
+    tab_available, tab_occupied, tab_matrix, tab_hall_search = st.tabs([
         f"🟢 Available Empty Halls ({len(filtered_free_rooms)})",
         f"🔴 Occupied Halls ({len(filtered_occupied_rooms)})",
         "📅 Full Day Matrix",
-        "🔍 Room Schedule Search"
+        "🔍 Single Hall Daily Search"
     ])
 
     with tab_available:
@@ -621,7 +854,7 @@ else:
         if filtered_free_rooms:
             grid_cols = st.columns(4)
             for idx, room in enumerate(filtered_free_rooms):
-                b_cat = get_room_category(room)
+                b_cat_f = get_room_category(room)
                 with grid_cols[idx % 4]:
                     st.markdown(f"""
                     <div class="room-card">
@@ -629,7 +862,7 @@ else:
                             <div class="room-name">
                                 <span>🚪</span> {room}
                             </div>
-                            <div class="room-building">📍 {b_cat}</div>
+                            <div class="room-building">📍 {b_cat_f}</div>
                         </div>
                         <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <span class="room-tag-free">VACANT</span>
@@ -647,14 +880,14 @@ else:
         if filtered_occupied_rooms:
             for room in filtered_occupied_rooms:
                 bookings = occupied_details.get(room, [])
-                b_cat = get_room_category(room)
+                b_cat_o = get_room_category(room)
                 
                 with st.container():
                     st.markdown(f"""
                     <div class="room-card-occupied">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="font-size: 18px; font-weight: 700; color: #fca5a5;">
-                                🚪 {room} <span style="font-size: 12px; font-weight: normal; color: #94a3b8; margin-left: 8px;">({b_cat})</span>
+                                🚪 {room} <span style="font-size: 12px; font-weight: normal; color: #94a3b8; margin-left: 8px;">({b_cat_o})</span>
                             </div>
                             <span class="room-tag-occ">OCCUPIED</span>
                         </div>
@@ -697,38 +930,60 @@ else:
         
         st.dataframe(matrix_data, width="stretch", hide_index=True)
 
-    with tab_room_search:
-        st.markdown("#### 🔍 Search a Specific Room's Weekly Schedule")
-        selected_room = st.selectbox("Select a Room to Inspect:", sorted(list(parser.master_rooms)))
+    with tab_hall_search:
+        st.markdown("#### 🔍 Single Hall Inspector (Pick 1 Hall & Date)")
+        st.caption("Select any lecture hall (e.g. B402) and date to see its complete free vs filled schedule.")
         
-        st.markdown(f"##### Weekly Schedule for Room: `{selected_room}` ({get_room_category(selected_room)})")
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            default_h_idx = sorted_master_rooms.index("B402") if "B402" in sorted_master_rooms else 0
+            tab_search_room = st.selectbox("Choose Hall:", sorted_master_rooms, index=default_h_idx, key="tab_search_room")
+        with col_s2:
+            tab_search_date = st.date_input("Choose Date:", value=now_dt.date(), key="tab_search_date")
+            
+        tab_date_day = tab_search_date.strftime("%A")
+        tab_target_day = tab_date_day if tab_date_day in parser.all_days else parser.all_days[0]
         
-        room_week_data = []
-        for day in parser.all_days:
-            for slot in parser.all_slots:
-                occ_set = parser.occupied_schedule.get(day, {}).get(slot, set())
-                if selected_room in occ_set:
-                    details = parser.occupied_details.get(day, {}).get(slot, [])
-                    r_details = [d for d in details if d.get("room") == selected_room]
-                    desc = "Occupied"
-                    if r_details:
-                        desc = f"{r_details[0].get('subject', '')} ({r_details[0].get('group', '')})"
-                    status_str = f"🔴 {desc}"
-                else:
-                    status_str = "🟢 VACANT"
+        tab_hall_data = parser.get_hall_day_schedule(tab_search_room, tab_target_day)
+        tab_bldg = get_room_category(tab_search_room)
+        
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px 18px; margin: 14px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <strong style="font-size: 16px; color: #38bdf8;">🏛️ {tab_search_room} ({tab_bldg})</strong>
+                    <span style="color: #94a3b8; font-size: 13px; margin-left: 8px;">• {tab_search_date.strftime('%B %d, %Y')} ({tab_target_day})</span>
+                </div>
+                <div style="font-size: 13px;">
+                    <span style="color: #34d399; font-weight: 700;">🟢 {tab_hall_data['free_slots_count']} Free Slots</span> &nbsp;|&nbsp;
+                    <span style="color: #f87171; font-weight: 700;">🔴 {tab_hall_data['filled_slots_count']} Filled Slots</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        tab_col_f, tab_col_o = st.columns(2)
+        with tab_col_f:
+            st.markdown("##### 🟢 Free Slots:")
+            if tab_hall_data["free_slots"]:
+                for f_slot in tab_hall_data["free_slots"]:
+                    st.markdown(f"- 🟢 **{f_slot['time_range']}**: Vacant (Ready for use)")
+            else:
+                st.warning("No free slots on this day.")
                 
-                room_week_data.append({
-                    "Day": day,
-                    "Slot": slot,
-                    "Status": status_str
-                })
-        
-        st.dataframe(room_week_data, width="stretch", hide_index=True)
+        with tab_col_o:
+            st.markdown("##### 🔴 Filled / In-Use Slots:")
+            if tab_hall_data["filled_slots"]:
+                for o_slot in tab_hall_data["filled_slots"]:
+                    bk = o_slot["bookings"][0] if o_slot["bookings"] else {}
+                    st.markdown(f"- 🔴 **{o_slot['time_range']}**: {bk.get('subject', 'Class')} ({bk.get('lecturer', '')})")
+            else:
+                st.success("No classes scheduled! Free all day.")
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #64748b; font-size: 12px; padding: 10px;">
-    SLIIT Timetable Real-Time Lecture Hall Engine • Streamlit & BeautifulSoup4 • Time and Slot Controls with Multi-Hour Block Allocation
+    SLIIT Timetable Real-Time Lecture Hall Engine • Streamlit & BeautifulSoup4 • Single Hall Inspector (B402) & Multi-Hour Block Allocation
 </div>
 """, unsafe_allow_html=True)
